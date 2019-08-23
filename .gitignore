@@ -1,0 +1,5 @@
+*.bak
+Synth_fw/.settings/com.atollic.truestudio.debug.hardware_device.prefs
+*.xml
+Synth_fw/.settings/org.eclipse.cdt.managedbuilder.core.prefs
+*.rar
