@@ -45,12 +45,6 @@
 #define SPI2_MOSI       GPIOB, 15
 #define SPI2_AF         AF5
 
-// SPI3
-#define SPI3_CS         GPIOB, 6
-#define SPI3_SCK        GPIOB, 3
-#define SPI3_MOSI       GPIOB, 5
-#define SPI3_AF         AF6
-
 #endif // GPIO
 
 #if 1 // =========================== DMA =======================================

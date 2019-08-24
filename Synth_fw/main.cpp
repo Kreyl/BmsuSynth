@@ -5,7 +5,7 @@
 #include "led.h"
 #include "kl_lib.h"
 #include "MsgQ.h"
-//#include "main.h"
+#include "dac8531.h"
 
 #if 1 // ======================== Variables and defines ========================
 // Forever
@@ -17,12 +17,15 @@ CmdUart485_t Uart485{&CmdUart485Params, UART485_RXTX_PIN};
 static void ITask();
 static void OnCmd(Shell_t *PShell);
 
-static Spi_t Spi1{SPI1};
-static Spi_t Spi2{SPI2};
+static Spi_t SpiSynth{SPI1};
+static Spi_t SpiAtt{SPI2};
 static Spi_t SpiDAC{SPI3};
+
+Dac_t Dac(SPI3, GPIOB, 3, 5, AF6, GPIOB, 6);
 
 // ==== Timers ====
 //static TmrKL_t TmrEverySecond {MS2ST(1000), evtIdEverySecond, tktPeriodic};
+static TmrKL_t TmrEvery10ms {TIME_MS2I(10), evtId10ms, tktPeriodic};
 #endif
 
 int main(void) {
@@ -50,8 +53,8 @@ int main(void) {
     PinSetupAlterFunc(SPI1_MOSI, omPushPull, pudNone, SPI1_AF);
     PinSetHi(SPI1_CS);
     // MSB first, master, ClkLowIdle, FirstEdge, Baudrate no more than 6.5MHz
-    Spi1.Setup(boMSB, cpolIdleLow, cphaFirstEdge, 1000000);
-    Spi1.Enable();
+    SpiSynth.Setup(boMSB, cpolIdleLow, cphaFirstEdge, 1000000);
+    SpiSynth.Enable();
 
     // Spi2
     PinSetupOut      (SPI2_CS,   omPushPull);
@@ -60,25 +63,21 @@ int main(void) {
     PinSetupAlterFunc(SPI2_MOSI, omPushPull, pudNone, SPI2_AF);
     PinSetHi(SPI2_CS);
     // MSB first, master, ClkLowIdle, FirstEdge, Baudrate no more than 6.5MHz
-    Spi2.Setup(boMSB, cpolIdleLow, cphaFirstEdge, 1000000);
-    Spi2.Enable();
+    SpiAtt.Setup(boMSB, cpolIdleLow, cphaFirstEdge, 1000000);
+    SpiAtt.Enable();
 
-    // SpiDAC
-    PinSetupOut      (SPI3_CS,   omPushPull);
-    PinSetupAlterFunc(SPI3_SCK,  omPushPull, pudNone, SPI3_AF);
-    PinSetupAlterFunc(SPI3_MOSI, omPushPull, pudNone, SPI3_AF);
-    PinSetHi(SPI3_CS);
-    // MSB first, master, ClkLowIdle, FirstEdge, Baudrate no more than 6.5MHz
-    SpiDAC.Setup(boMSB, cpolIdleLow, cphaFirstEdge, 1000000);
-    SpiDAC.Enable();
+    Dac.Init();
 
 
     // ==== Time and timers ====
 //    TmrEverySecond.StartOrRestart();
+    TmrEvery10ms.StartOrRestart();
 
     // Main cycle
     ITask();
 }
+
+uint16_t DacV = 0;
 
 __noreturn
 void ITask() {
@@ -89,6 +88,11 @@ void ITask() {
 //                TimeS++;
 //                ReadAndSetupMode();
 //                break;
+
+            case evtId10ms:
+                Dac.Set(DacV);
+                DacV += 1000;
+                break;
 
             case evtIdShellCmd:
                 OnCmd((Shell_t*)Msg.Ptr);
