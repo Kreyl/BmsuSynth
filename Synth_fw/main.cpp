@@ -17,6 +17,8 @@ CmdUart485_t Uart485{&CmdUart485Params, UART485_RXTX_PIN};
 static void ITask();
 static void OnCmd(Shell_t *PShell);
 
+uint32_t ID = 1;
+
 static Spi_t SpiSynth{SPI1};
 static Spi_t SpiAtt{SPI2};
 static Spi_t SpiDAC{SPI3};
@@ -25,7 +27,7 @@ Dac_t Dac(SPI3, GPIOB, 3, 5, AF6, GPIOB, 6);
 
 // ==== Timers ====
 //static TmrKL_t TmrEverySecond {MS2ST(1000), evtIdEverySecond, tktPeriodic};
-static TmrKL_t TmrEvery10ms {TIME_MS2I(10), evtId10ms, tktPeriodic};
+//static TmrKL_t TmrEvery10ms {TIME_MS2I(10), evtId10ms, tktPeriodic}; // XXX
 #endif
 
 int main(void) {
@@ -71,13 +73,13 @@ int main(void) {
 
     // ==== Time and timers ====
 //    TmrEverySecond.StartOrRestart();
-    TmrEvery10ms.StartOrRestart();
+//    TmrEvery10ms.StartOrRestart(); // XXX
 
     // Main cycle
     ITask();
 }
 
-uint16_t DacV = 0;
+//uint16_t DacV = 0; // XXX
 
 __noreturn
 void ITask() {
@@ -89,10 +91,10 @@ void ITask() {
 //                ReadAndSetupMode();
 //                break;
 
-            case evtId10ms:
-                Dac.Set(DacV);
-                DacV += 1000;
-                break;
+//            case evtId10ms: XXX
+//                Dac.Set(DacV);
+//                DacV += 1000;
+//                break;
 
             case evtIdShellCmd:
                 OnCmd((Shell_t*)Msg.Ptr);
@@ -106,13 +108,31 @@ void ITask() {
 #if 1 // ================= Command processing ====================
 void OnCmd(Shell_t *PShell) {
 	Cmd_t *PCmd = &PShell->Cmd;
-    __attribute__((unused)) int32_t dw32 = 0;  // May be unused in some configurations
-//    Uart.Printf("%S\r", PCmd->Name);
+	uint32_t FID;
     // Handle command
     if(PCmd->NameIs("Ping")) {
-        PShell->Ack(retvOk);
+        if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) PShell->Ack(retvOk);
     }
-    else if(PCmd->NameIs("Version")) PShell->Print("%S %S\r", APP_NAME, XSTRINGIFY(BUILD_TIME));
+    else if(PCmd->NameIs("Version")) {
+        if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) {
+            PShell->Print("%S %S\r", APP_NAME, XSTRINGIFY(BUILD_TIME));
+        }
+    }
+
+    else if(PCmd->NameIs("SetDac")) {
+        uint32_t FID;
+        uint16_t FValue;
+        if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) {
+            if(PCmd->GetNext<uint16_t>(&FValue) == retvOk) {
+                Dac.Set(FValue);
+                PShell->Ack(retvOk);
+                return;
+            }
+            else PShell->Ack(retvBadValue);
+        } // if ID
+    }
+
+
 
     else PShell->Ack(retvCmdUnknown);
 }
