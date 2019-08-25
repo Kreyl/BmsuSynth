@@ -6,6 +6,8 @@
 #include "kl_lib.h"
 #include "MsgQ.h"
 #include "dac8531.h"
+#include "ADF5356.h"
+#include "SaveToFlash.h"
 
 #if 1 // ======================== Variables and defines ========================
 // Forever
@@ -17,22 +19,28 @@ CmdUart485_t Uart485{&CmdUart485Params, UART485_RXTX_PIN};
 static void ITask();
 static void OnCmd(Shell_t *PShell);
 
-uint32_t ID = 1;
+#define ID_MIN      1
+#define ID_MAX      18
+#define ID_DEFAULT  1
+uint32_t ID = ID_DEFAULT;
+static uint8_t ISetID(int32_t NewID);
+void ReadIDfromFlash();
 
-static Spi_t SpiSynth{SPI1};
 static Spi_t SpiAtt{SPI2};
 static Spi_t SpiDAC{SPI3};
 
+ADF5356_t Synth(SPI1, GPIOA, 5, 7, AF5, GPIOA, 4);
+uint32_t AdfRegBuf[ADF_REG_CNT];
 Dac_t Dac(SPI3, GPIOB, 3, 5, AF6, GPIOB, 6);
 
 // ==== Timers ====
 //static TmrKL_t TmrEverySecond {MS2ST(1000), evtIdEverySecond, tktPeriodic};
-//static TmrKL_t TmrEvery10ms {TIME_MS2I(10), evtId10ms, tktPeriodic}; // XXX
 #endif
 
 int main(void) {
     // ==== Init Vcore & clock system ====
-    Clk.SetCoreClk(cclk16MHz);
+//    Clk.SetVoltageRange(mvrHiPerf);
+//    Clk.SetCoreClk(cclk16MHz);
 //    Clk.SetCoreClk(cclk48MHz);
     Clk.UpdateFreqValues();
 
@@ -43,20 +51,11 @@ int main(void) {
 
     // ==== Init hardware ====
     Uart.Init();
-    Printf("\r%S %S\r", APP_NAME, XSTRINGIFY(BUILD_TIME));
+    ReadIDfromFlash();
+    Printf("\r%S %S; ID: %u\r", APP_NAME, XSTRINGIFY(BUILD_TIME), ID);
     Clk.PrintFreqs();
 
     Uart485.Init();
-
-    // Spi1
-    PinSetupOut      (SPI1_CS,   omPushPull);
-    PinSetupAlterFunc(SPI1_SCK,  omPushPull, pudNone, SPI1_AF);
-    PinSetupAlterFunc(SPI1_MISO, omPushPull, pudNone, SPI1_AF);
-    PinSetupAlterFunc(SPI1_MOSI, omPushPull, pudNone, SPI1_AF);
-    PinSetHi(SPI1_CS);
-    // MSB first, master, ClkLowIdle, FirstEdge, Baudrate no more than 6.5MHz
-    SpiSynth.Setup(boMSB, cpolIdleLow, cphaFirstEdge, 1000000);
-    SpiSynth.Enable();
 
     // Spi2
     PinSetupOut      (SPI2_CS,   omPushPull);
@@ -68,18 +67,16 @@ int main(void) {
     SpiAtt.Setup(boMSB, cpolIdleLow, cphaFirstEdge, 1000000);
     SpiAtt.Enable();
 
+    Synth.Init();
     Dac.Init();
 
 
     // ==== Time and timers ====
 //    TmrEverySecond.StartOrRestart();
-//    TmrEvery10ms.StartOrRestart(); // XXX
 
     // Main cycle
     ITask();
 }
-
-//uint16_t DacV = 0; // XXX
 
 __noreturn
 void ITask() {
@@ -89,11 +86,6 @@ void ITask() {
 //            case evtIdEverySecond:
 //                TimeS++;
 //                ReadAndSetupMode();
-//                break;
-
-//            case evtId10ms: XXX
-//                Dac.Set(DacV);
-//                DacV += 1000;
 //                break;
 
             case evtIdShellCmd:
@@ -120,20 +112,91 @@ void OnCmd(Shell_t *PShell) {
     }
 
     else if(PCmd->NameIs("SetDac")) {
-        uint32_t FID;
         uint16_t FValue;
         if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) {
             if(PCmd->GetNext<uint16_t>(&FValue) == retvOk) {
                 Dac.Set(FValue);
                 PShell->Ack(retvOk);
-                return;
             }
             else PShell->Ack(retvBadValue);
         } // if ID
     }
 
+#if 1 // ============ Synth ============
+    else if(PCmd->NameIs("SetAdf14")) {
+        if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) {
+            if(PCmd->GetArray<uint32_t>(AdfRegBuf, ADF_REG_CNT) == retvOk) {
+                Synth.Write14Regs(AdfRegBuf);
+                PShell->Ack(retvOk);
+            }
+            else PShell->Ack(retvBadValue);
+        } // if ID
+    }
+
+    else if(PCmd->NameIs("SetAdf5")) {
+        if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) {
+            if(PCmd->GetArray<uint32_t>(AdfRegBuf, 5) == retvOk) {
+                Synth.Write5Regs(AdfRegBuf);
+                PShell->Ack(retvOk);
+            }
+            else PShell->Ack(retvBadValue);
+        } // if ID
+    }
+
+    else if(PCmd->NameIs("SyntL1")) {
+        if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) {
+            Synth.Write14Regs(ADFRegs_L1);
+            PShell->Ack(retvOk);
+        }
+    }
+    else if(PCmd->NameIs("SyntL2")) {
+        if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) {
+            Synth.Write14Regs(ADFRegs_L2);
+            PShell->Ack(retvOk);
+        }
+    }
+    else if(PCmd->NameIs("SyntL5")) {
+        if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) {
+            Synth.Write14Regs(ADFRegs_L5);
+            PShell->Ack(retvOk);
+        }
+    }
+#endif
+
+    else if(PCmd->NameIs("GetID")) PShell->Reply("ID", ID);
+
+    else if(PCmd->NameIs("SetID")) {
+        int32_t FID;
+        if(PCmd->GetNext<int32_t>(&FID) != retvOk) { PShell->Ack(retvCmdError); return; }
+        PShell->Ack(ISetID(FID));
+    }
+
 
 
     else PShell->Ack(retvCmdUnknown);
+}
+#endif
+
+#if 1 // =========================== ID management =============================
+void ReadIDfromFlash() {
+    Flash::Load(&ID, sizeof(ID)); // Read device ID
+    if(ID < ID_MIN or ID > ID_MAX) {
+        Printf("\rUsing default ID\r");
+        ID = ID_DEFAULT;
+    }
+}
+
+uint8_t ISetID(int32_t NewID) {
+    if(NewID < ID_MIN or NewID > ID_MAX) return retvFail;
+    uint8_t rslt = Flash::Save(&NewID, sizeof(NewID));
+    if(rslt == retvOk) {
+        ID = NewID;
+        Printf("New ID: %u\r", ID);
+        return retvOk;
+    }
+    else {
+        Printf("Flash Write error: %u\r", rslt);
+        return retvFail;
+    }
 }
 #endif

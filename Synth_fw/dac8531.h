@@ -19,6 +19,22 @@ public:
             GPIO_TypeDef *ACSGpio, uint16_t ACs) :
                 ISpi(ASpi), SpiGpio(ASpiGpio), CSGpio(ACSGpio),
                         Sck(ASck), Mosi(AMosi), Cs(ACs), IAlterfunc(AAlterfunc) {}
-    void Init();
-    void Set(uint16_t AData);
+
+    void Init() {
+        PinSetupOut((GPIO_TypeDef*)CSGpio, Cs, omPushPull);
+        PinSetupAlterFunc((GPIO_TypeDef*)SpiGpio, Sck, omPushPull, pudNone, IAlterfunc);
+        PinSetupAlterFunc((GPIO_TypeDef*)SpiGpio, Mosi, omPushPull, pudNone, IAlterfunc);
+        CsHi();
+        // ==== SPI ====    MSB first, master, ClkLowIdle, FirstEdge, freq up to 30 MHz
+        ISpi.Setup(boMSB, cpolIdleLow, cphaSecondEdge, 30000000);
+        ISpi.Enable();
+    }
+
+    void Set(uint16_t AData) {
+        CsLo();
+        ISpi.ReadWriteByte(0);
+        ISpi.ReadWriteByte((AData>>8) & 0xFF);
+        ISpi.ReadWriteByte(AData & 0xFF);
+        CsHi();
+    }
 };

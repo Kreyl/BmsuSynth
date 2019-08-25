@@ -11,7 +11,7 @@
 #include <stdarg.h>
 #include "kl_lib.h"
 
-#define CMD_BUF_SZ		99
+#define CMD_BUF_SZ		1024
 #define DELIMITERS      " ,"
 
 enum ProcessDataResult_t {pdrProceed, pdrNewCmd};

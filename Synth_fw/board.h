@@ -31,13 +31,6 @@
 #define UART485_RX_PIN      3
 #define UART485_RXTX_PIN    GPIOA, 1, omPushPull
 
-// SPI1
-#define SPI1_CS         GPIOA, 4
-#define SPI1_SCK        GPIOA, 5
-#define SPI1_MISO       GPIOA, 6
-#define SPI1_MOSI       GPIOA, 7
-#define SPI1_AF         AF5
-
 // SPI2
 #define SPI2_CS         GPIOB, 12
 #define SPI2_SCK        GPIOB, 13
@@ -66,7 +59,7 @@
 #if 1 // ========================== USART ======================================
 #define PRINTF_FLOAT_EN FALSE
 #define UART_TXBUF_SZ   4096
-#define UART_RXBUF_SZ   99
+#define UART_RXBUF_SZ   2048
 
 #define UARTS_CNT       2
 
