@@ -7,9 +7,6 @@
 
 #pragma once
 
-#define ADF_REG5_VALUE      0x00800025
-#define ADF_REG8_VALUE      0x15596568
-
 #define ADF_REG_CNT         14 // 0...13
 
 #if 1 // =========================== Reg values set ============================
@@ -109,7 +106,7 @@ public:
         PinSetupAlterFunc((GPIO_TypeDef*)SpiGpio, Mosi, omPushPull, pudNone, IAlterfunc);
         CsHi();
         // ==== SPI ====    MSB first, master, ClkLowIdle, FirstEdge, freq up to 50 MHz
-        ISpi.Setup(boMSB, cpolIdleLow, cphaFirstEdge, 1000000, bitn16);//50000000);
+        ISpi.Setup(boMSB, cpolIdleLow, cphaFirstEdge, 50000000, bitn16);
         ISpi.Enable();
     }
 

@@ -7,6 +7,7 @@
 #include "MsgQ.h"
 #include "dac8531.h"
 #include "ADF5356.h"
+#include "DAT31.h"
 #include "SaveToFlash.h"
 
 #if 1 // ======================== Variables and defines ========================
@@ -26,12 +27,10 @@ uint32_t ID = ID_DEFAULT;
 static uint8_t ISetID(int32_t NewID);
 void ReadIDfromFlash();
 
-static Spi_t SpiAtt{SPI2};
-static Spi_t SpiDAC{SPI3};
-
-ADF5356_t Synth(SPI1, GPIOA, 5, 7, AF5, GPIOA, 4);
 uint32_t AdfRegBuf[ADF_REG_CNT];
+ADF5356_t Synth(SPI1, GPIOA, 5, 7, AF5, GPIOA, 4);
 Dac_t Dac(SPI3, GPIOB, 3, 5, AF6, GPIOB, 6);
+DAT31_t Att(GPIOB, 13, 15, GPIOB, 12);
 
 // ==== Timers ====
 //static TmrKL_t TmrEverySecond {MS2ST(1000), evtIdEverySecond, tktPeriodic};
@@ -40,7 +39,7 @@ Dac_t Dac(SPI3, GPIOB, 3, 5, AF6, GPIOB, 6);
 int main(void) {
     // ==== Init Vcore & clock system ====
 //    Clk.SetVoltageRange(mvrHiPerf);
-//    Clk.SetCoreClk(cclk16MHz);
+    Clk.SetCoreClk(cclk16MHz);
 //    Clk.SetCoreClk(cclk48MHz);
     Clk.UpdateFreqValues();
 
@@ -57,19 +56,9 @@ int main(void) {
 
     Uart485.Init();
 
-    // Spi2
-    PinSetupOut      (SPI2_CS,   omPushPull);
-    PinSetupAlterFunc(SPI2_SCK,  omPushPull, pudNone, SPI2_AF);
-    PinSetupAlterFunc(SPI2_MISO, omPushPull, pudNone, SPI2_AF);
-    PinSetupAlterFunc(SPI2_MOSI, omPushPull, pudNone, SPI2_AF);
-    PinSetHi(SPI2_CS);
-    // MSB first, master, ClkLowIdle, FirstEdge, Baudrate no more than 6.5MHz
-    SpiAtt.Setup(boMSB, cpolIdleLow, cphaFirstEdge, 1000000);
-    SpiAtt.Enable();
-
     Synth.Init();
     Dac.Init();
-
+    Att.Init();
 
     // ==== Time and timers ====
 //    TmrEverySecond.StartOrRestart();
@@ -162,6 +151,17 @@ void OnCmd(Shell_t *PShell) {
         }
     }
 #endif
+
+    else if(PCmd->NameIs("SetAtt")) {
+        if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) {
+            uint8_t FValue;
+            if(PCmd->GetNext<uint8_t>(&FValue) == retvOk) {
+                Att.Write(FValue);
+                PShell->Ack(retvOk);
+            }
+            else PShell->Ack(retvBadValue);
+        } // if ID
+    }
 
     else if(PCmd->NameIs("GetID")) PShell->Reply("ID", ID);
 

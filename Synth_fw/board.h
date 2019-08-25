@@ -31,13 +31,6 @@
 #define UART485_RX_PIN      3
 #define UART485_RXTX_PIN    GPIOA, 1, omPushPull
 
-// SPI2
-#define SPI2_CS         GPIOB, 12
-#define SPI2_SCK        GPIOB, 13
-#define SPI2_MISO       GPIOB, 14
-#define SPI2_MOSI       GPIOB, 15
-#define SPI2_AF         AF5
-
 #endif // GPIO
 
 #if 1 // =========================== DMA =======================================

@@ -101,7 +101,7 @@ enum LowHigh_t  {Low, High};
 enum RiseFall_t {rfRising, rfFalling, rfNone};
 enum Inverted_t {invNotInverted, invInverted};
 enum PinOutMode_t {omPushPull = 0, omOpenDrain = 1};
-enum BitNumber_t {bitn8, bitn16, bitn32};
+enum BitNumber_t {bitn4, bitn5, bitn6, bitn7, bitn8, bitn16, bitn32};
 enum EnableDisable_t {Enable, Disable};
 
 typedef void (*ftVoidVoid)(void);
@@ -287,7 +287,7 @@ class TmrKL_t : private IrqHandler_t {
 private:
     virtual_timer_t Tmr;
     void StartI() { chVTSetI(&Tmr, Period, TmrKLCallback, this); }  // Will be reset before start
-    systime_t Period;
+    sysinterval_t Period;
     EvtMsgId_t EvtId;
     TmrKLType_t TmrType;
     void IIrqHandler();
@@ -297,7 +297,7 @@ public:
         StartI();
         chSysUnlock();
     }
-    void StartOrRestart(systime_t NewPeriod) {
+    void StartOrRestart(sysinterval_t NewPeriod) {
         chSysLock();
         Period = NewPeriod;
         StartI();
@@ -313,7 +313,7 @@ public:
     void SetNewPeriod_ms(uint32_t NewPeriod) { Period = TIME_MS2I(NewPeriod); }
     void SetNewPeriod_s(uint32_t NewPeriod) { Period = TIME_S2I(NewPeriod); }
 
-    TmrKL_t(systime_t APeriod, EvtMsgId_t AEvtId, TmrKLType_t AType) :
+    TmrKL_t(sysinterval_t APeriod, EvtMsgId_t AEvtId, TmrKLType_t AType) :
         Period(APeriod), EvtId(AEvtId), TmrType(AType) {}
     // Dummy period is set
     TmrKL_t(EvtMsgId_t AEvtId, TmrKLType_t AType) :
@@ -359,6 +359,8 @@ namespace BackupSpc {
 #if defined STM32F2XX || defined STM32F4XX || defined STM32F10X_LD_VL
         rccEnableBKPSRAM(FALSE);
         PWR->CR |= PWR_CR_DBP;
+#elif defined STM32L1XX
+        PWR->CR |= PWR_CR_DBP;
 #elif defined STM32L4XX
         PWR->CR1 |= PWR_CR1_DBP;
 #endif
@@ -367,14 +369,21 @@ namespace BackupSpc {
     static inline void DisableAccess() {
 #if defined STM32F2XX || defined STM32F4XX || defined STM32F10X_LD_VL
         PWR->CR &= ~PWR_CR_DBP;
+#elif defined STM32L1XX
+        PWR->CR &= ~PWR_CR_DBP;
 #elif defined STM32L4XX
         PWR->CR1 &= ~PWR_CR1_DBP;
 #endif
     }
 
     static inline void Reset() {
+#if defined STM32L1XX
+        RCC->CSR |=  RCC_CSR_RTCRST;
+        RCC->CSR &= ~RCC_CSR_RTCRST;
+#else
         RCC->BDCR |=  RCC_BDCR_BDRST;
         RCC->BDCR &= ~RCC_BDCR_BDRST;
+#endif
     }
 
     // RegN = 0...19
@@ -390,7 +399,7 @@ namespace BackupSpc {
 } // namespace
 #endif
 
-#if 1 // ============================= RTC =====================================
+#if 0 // ============================= RTC =====================================
 namespace Rtc {
 #if defined STM32F10X_LD_VL
 // Wait until the RTC registers (RTC_CNT, RTC_ALR and RTC_PRL) are synchronized with RTC APB clock.
@@ -1179,6 +1188,7 @@ public:
 #endif // EXTI
 
 #if 1 // ============================== IWDG ===================================
+#define IWDG_ENABLED    TRUE    // to enable it in cpp
 namespace Iwdg {
 
 // Up to 32000 ms
