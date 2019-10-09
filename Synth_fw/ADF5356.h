@@ -15,9 +15,8 @@
  fvco /fpfd= 1187.916= N,  INT=1187,  FRAC1=0.916*224=0.916*16777216=
 15 367929, FRAC2=107, MOD2=125
 */
-static const uint32_t ADFRegs_L1[ADF_REG_CNT] = {
-        0x00304A30, // 0
-        0x0EA7EF91, // 1
+/*static const uint32_t ADFRegs_L1[ADF_REG_CNT] = {
+        0x00304A30, // 0, // 1
         0x01AC07D2, // 2
         0x00000003, // 3
         0x32008984, // 4
@@ -30,14 +29,32 @@ static const uint32_t ADFRegs_L1[ADF_REG_CNT] = {
         0x0061200B, // 11
         0x000015FC, // 12
         0x0000000D, // 13
+};*/
+
+static const uint32_t ADFRegs_L1[ADF_REG_CNT] = {  //regs added by Notiel
+		0x00302510, //0
+		0x0F53f7C1, //1
+		0x01D007D2, //2
+		0x00000003, //3
+		0x32008984, //4
+		0x00800025, //5
+		0x35008476, //6
+		0x060000E7, //7
+		0x15596568, //8
+		0x07047CC9, //9
+		0x00C0067A, //10
+		0x0061200B, //11
+		0x100005FC, //12
+		0x0000000D, //13
 };
+
 
 /* ==== L2 ====
 fout =6287,40; fvco =6287,40; fref =10 ÌÃö, fpfd=5ÌÃö, Step=0.001 ÌÃö
  fvco /fpfd= 1257.48= N,  INT=1257,  FRAC1=0.48*224=0.48*16777216=8 053063,
  FRAC2=17, MOD2=25
 */
-static const uint32_t ADFRegs_L2[ADF_REG_CNT] = {
+/*static const uint32_t ADFRegs_L2[ADF_REG_CNT] = {
         0x00304E90, // 0
         0x07AE1471, // 1
         0x00440192, // 2
@@ -52,13 +69,30 @@ static const uint32_t ADFRegs_L2[ADF_REG_CNT] = {
         0x0061200B, // 11
         0x000015FC, // 12
         0x0000000D, // 13
+};*/
+
+static const uint32_t ADFRegs_L2[ADF_REG_CNT] = {  //regs added by Notiel
+		0x00302740, //0
+		0x0BD70A31, //1
+		0x00540192, //2
+		0x00000003, //3
+		0x32008984, //4
+		0x00800025, //5
+		0x35008476, //6
+		0x060000E7, //7
+		0x15596568, //8
+		0x07047CC9, //9
+		0x00C0067A, //10
+		0x0061200B, //11
+		0x000015FC, //12
+		0x0000000D, //13
 };
 
 /* ==== L5 ====
 fout =6338,55; fvco =6338,55; fref =20 ÌÃö, fpfd=10 ÌÃö,  Step=0.001 ÌÃö
  fvco /fpfd= 633.855= N,  INT=633,  FRAC1=14344 519,FRAC2=17, MOD2=25
 */
-static const uint32_t ADFRegs_L5[ADF_REG_CNT] = {
+/*static const uint32_t ADFRegs_L5[ADF_REG_CNT] = {
         0x00302790, // 0
         0x0DAE1471, // 1
         0x00440192, // 2
@@ -73,7 +107,25 @@ static const uint32_t ADFRegs_L5[ADF_REG_CNT] = {
         0x0061200B, // 11
         0x000015FC, // 12
         0x0000000D, // 13
+};*/
+
+static const uint32_t ADFRegs_L5[ADF_REG_CNT] = {  //regs added by Notiel
+		0x00302790, //0
+		0x0DAE1471, //1
+		0x00440192, //2
+		0x00000003, //3
+		0x32008984, //4
+		0x00800025, //5
+		0x35008476, //6
+		0x060000E7, //7
+		0x15596568, //8
+		0x07047CC9, //9
+		0x00C0067A, //10
+		0x0061200B, //11
+		0x000015FC, //12
+		0x0000000D, //13
 };
+
 #endif
 
 class ADF5356_t {
