@@ -55,6 +55,8 @@ int main(void) {
     Clk.PrintFreqs();
 
     Uart485.Init();
+    PinSetupOut(TTL_OUT1, omPushPull);
+    PinSetupOut(TTL_OUT2, omPushPull);
 
     Synth.Init();
     Dac.Init();
@@ -100,17 +102,6 @@ void OnCmd(Shell_t *PShell) {
         }
     }
 
-    else if(PCmd->NameIs("SetDac")) {
-        uint16_t FValue;
-        if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) {
-            if(PCmd->GetNext<uint16_t>(&FValue) == retvOk) {
-                Dac.Set(FValue);
-                PShell->Ack(retvOk);
-            }
-            else PShell->Ack(retvBadValue);
-        } // if ID
-    }
-
 #if 1 // ============ Synth ============
     else if(PCmd->NameIs("SetAdf14")) {
         if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) {
@@ -152,6 +143,18 @@ void OnCmd(Shell_t *PShell) {
     }
 #endif
 
+#if 1 // ======= DAC, Att, Switch ======
+    else if(PCmd->NameIs("SetDac")) {
+        uint16_t FValue;
+        if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) {
+            if(PCmd->GetNext<uint16_t>(&FValue) == retvOk) {
+                Dac.Set(FValue);
+                PShell->Ack(retvOk);
+            }
+            else PShell->Ack(retvBadValue);
+        } // if ID
+    }
+
     else if(PCmd->NameIs("SetAtt")) {
         if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) {
             uint8_t FValue;
@@ -163,6 +166,24 @@ void OnCmd(Shell_t *PShell) {
         } // if ID
     }
 
+    else if(PCmd->NameIs("SetSw")) {
+        if(PCmd->GetNext<uint32_t>(&FID) == retvOk and FID == ID) {
+            uint8_t v1, v2;
+            if(PCmd->GetNext<uint8_t>(&v1) == retvOk  ) {
+                if(PCmd->GetNext<uint8_t>(&v2) == retvOk  ) {
+                    if(v1 == 0) PinSetLo(TTL_OUT1);
+                    else PinSetHi(TTL_OUT1);
+                    if(v2 == 0) PinSetLo(TTL_OUT2);
+                    else PinSetHi(TTL_OUT2);
+                    PShell->Ack(retvOk);
+                }
+                else PShell->Ack(retvBadValue);
+            }
+            else PShell->Ack(retvBadValue);
+        } // if ID
+    }
+#endif
+
     else if(PCmd->NameIs("GetID")) PShell->Reply("ID", ID);
 
     else if(PCmd->NameIs("SetID")) {
@@ -171,6 +192,12 @@ void OnCmd(Shell_t *PShell) {
         PShell->Ack(ISetID(FID));
     }
 
+
+    else if(PCmd->NameIs("rs485")) {
+        char* S;
+        while(PCmd->GetNextString(&S) == retvOk) Uart485.Print("%S", S);
+        PShell->Ack(retvOk);
+    }
 
 
     else PShell->Ack(retvCmdUnknown);

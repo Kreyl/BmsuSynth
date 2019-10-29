@@ -31,6 +31,10 @@
 #define UART485_RX_PIN      3
 #define UART485_RXTX_PIN    GPIOA, 1, omPushPull
 
+// TTL outputs
+#define TTL_OUT1        GPIOB, 8
+#define TTL_OUT2        GPIOB, 9
+
 #endif // GPIO
 
 #if 1 // =========================== DMA =======================================
